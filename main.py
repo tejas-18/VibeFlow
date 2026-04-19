@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import random
 import os
+import time
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -19,6 +20,8 @@ else:
 
 # --- Page Config ---
 st.set_page_config(page_title="VibeFlow Stadium", page_icon="🏟️", layout="wide", initial_sidebar_state="collapsed")
+
+
 
 # --- Custom CSS for Unique Sports Dashboard Styling ---
 st.markdown("""
@@ -105,7 +108,6 @@ st.markdown("""
         color: #f0f0f0;
     }
 
-    /* Chat window fixing */
     .stChatFloatingInputContainer {
         padding-bottom: 20px;
     }
@@ -119,7 +121,6 @@ st.markdown("""
         border: 1px solid #1a1a1a;
     }
 
-    /* Food stands looking like ticket stubs or mini scoreboards */
     .food-stand {
         background: #151515;
         padding: 15px 10px;
@@ -128,6 +129,8 @@ st.markdown("""
         border-left: 4px solid #333;
         font-family: 'Share Tech Mono', monospace;
     }
+    
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -145,9 +148,13 @@ def generate_simulated_data():
 if "data" not in st.session_state:
     st.session_state.data = generate_simulated_data()
 
+
+
 # Pulse Action
 def pulse_data():
     st.session_state.data = generate_simulated_data()
+
+
 
 # --- Top Header ---
 col_head1, col_head2 = st.columns([5, 1])
@@ -161,8 +168,9 @@ st.markdown("<hr style='margin: 0.5em 0; border-color: #333;'>", unsafe_allow_ht
 
 gate_data, food_data = st.session_state.data
 
+
+
 # --- Main Layout (2 Columns) ---
-# Fixing overlaps by adjusting column ratio and removing fixed height if it causes issues
 main_left, main_right = st.columns([1.3, 1], gap="medium")
 
 with main_left:
@@ -180,33 +188,17 @@ with main_left:
     else:
         flow_status, flow_class = "OPTIMAL", "optimal"
 
-    # Use 3 columns for metric cards
     m1, m2, m3 = st.columns(3)
     
     with m1:
-        st.markdown(f"""
-        <div class="metric-card-optimal">
-            <div class="metric-label">Est. Attendance</div>
-            <div class="metric-value value-optimal">{total_attendance_est:,}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card-optimal"><div class="metric-label">Est. Attendance</div><div class="metric-value value-optimal">{total_attendance_est:,}</div></div>', unsafe_allow_html=True)
         
     with m2:
         wait_class = "optimal" if avg_wait < 10 else ("warning" if avg_wait < 20 else "critical")
-        st.markdown(f"""
-        <div class="metric-card-{wait_class}">
-            <div class="metric-label">Avg Concession Wait</div>
-            <div class="metric-value value-{wait_class}">{avg_wait}M</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card-{wait_class}"><div class="metric-label">Avg Concession Wait</div><div class="metric-value value-{wait_class}">{avg_wait}M</div></div>', unsafe_allow_html=True)
         
     with m3:
-        st.markdown(f"""
-        <div class="metric-card-{flow_class}">
-            <div class="metric-label">Gate Flow</div>
-            <div class="metric-value value-{flow_class}">{flow_status}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card-{flow_class}"><div class="metric-label">Gate Flow</div><div class="metric-value value-{flow_class}">{flow_status}</div></div>', unsafe_allow_html=True)
 
     # --- Live Density Map ---
     st.markdown("<div class='sports-panel'>", unsafe_allow_html=True)
@@ -252,12 +244,7 @@ with main_left:
     for i, (stand, wait) in enumerate(food_data.items()):
         status_color = "#ff6f00" if wait < 10 else ("#faca2b" if wait < 20 else "#ff4b4b")
         with food_cols[i % 3]:
-            st.markdown(f"""
-            <div class='food-stand' style='border-left-color: {status_color};'>
-                <div style='font-family: Outfit; font-size: 0.8rem; color: #888; text-transform: uppercase;'>{stand}</div>
-                <div style='font-size: 1.4rem; color: {status_color};'>{wait} MIN</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"<div class='food-stand' style='border-left-color: {status_color};'><div style='font-family: Outfit; font-size: 0.8rem; color: #888; text-transform: uppercase;'>{stand}</div><div style='font-size: 1.4rem; color: {status_color};'>{wait} MIN</div></div>", unsafe_allow_html=True)
             
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -265,8 +252,6 @@ with main_right:
     # --- AI Fan Concierge ---
     st.markdown("### ⚡ Smart Routing AI")
     
-    # We remove the fixed height container that was pushing things down or overlapping
-    # By using a simpler container, Streamlit manages the flow better.
     chat_container = st.container(border=True)
     
     with chat_container:
@@ -275,12 +260,10 @@ with main_right:
                 {"role": "assistant", "content": "Stadium Command AI initialized. Ask me for real-time routing or concession updates."}
             ]
 
-        # Display chat messages
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"], avatar="⚡" if msg["role"] == "assistant" else "👤"):
                 st.markdown(msg["content"])
 
-    # Chat input
     if prompt := st.chat_input("E.g., Which gate has the shortest wait?"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         
@@ -290,15 +273,7 @@ with main_right:
             
             with st.chat_message("assistant", avatar="⚡"):
                 if model:
-                    context = f"""
-                    You are the VibeFlow Stadium Command AI, a high-tech, fast, and precise assistant for managing fan flow and stadium operations.
-                    
-                    REAL-TIME LIVE DATA:
-                    - Gate Sector Loads (%): {gate_data} (Lower is better for entry/exit)
-                    - Concession Wait Times (mins): {food_data} (Lower is better)
-                    
-                    Respond directly to the fan's query using this live data. Keep your answers short, dynamic, and action-oriented. Give them a "Smart Route" recommendation if they ask for directions. Do not explain where you got the data.
-                    """
+                    context = f"You are the VibeFlow Stadium Command AI, a high-tech, fast, and precise assistant for managing fan flow and stadium operations. REAL-TIME LIVE DATA: - Gate Sector Loads (%): {gate_data} (Lower is better for entry/exit) - Concession Wait Times (mins): {food_data} (Lower is better). Respond directly to the fan's query using this live data. Keep your answers short, dynamic, and action-oriented. Give them a 'Smart Route' recommendation if they ask for directions. Do not explain where you got the data."
                     try:
                         with st.spinner("Analyzing stadium telemetry..."):
                             response = model.generate_content([context, prompt])
@@ -310,3 +285,5 @@ with main_right:
                     msg = "Please configure your `GOOGLE_API_KEY` in the `.env` file to access the AI network."
                     st.warning(msg)
                     st.session_state.messages.append({"role": "assistant", "content": msg})
+    
+
