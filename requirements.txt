@@ -4,4 +4,3 @@ pandas
 plotly
 python-dotenv
 pytest
-pytest-mock
