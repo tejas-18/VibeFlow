@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from google import genai
 from google.genai import types
-from google.api_core.exceptions import GoogleAPIError
+from google.genai.errors import ClientError
 
 # Load environment variables securely
 load_dotenv()
@@ -303,7 +303,7 @@ with main_right:
                         try:
                             with st.spinner("Analyzing stadium telemetry..."):
                                 response = model.models.generate_content(
-                                    model='gemini-2.5-flash',
+                                    model='gemini-2.0-flash-lite',
                                     contents=[context, prompt],
                                     config=types.GenerateContentConfig(
                                         temperature=0.2,
@@ -318,10 +318,13 @@ with main_right:
                                 )
                                 st.markdown(response.text)
                                 st.session_state.messages.append({"role": "assistant", "content": response.text})
-                        except GoogleAPIError as e:
-                            st.error("Connection to AI network severed. Please try again.")
+                        except ClientError as e:
+                            if e.code == 429:
+                                st.warning("⚡ AI quota limit reached. Please wait ~1 minute and try again.", icon="⏳")
+                            else:
+                                st.error(f"AI network error ({e.code}): {e.message}")
                         except Exception as e:
-                            st.error("An unexpected telemetry error occurred.")
+                            st.error(f"An unexpected telemetry error occurred: {type(e).__name__}: {e}")
                     else:
                         msg = "Please configure your `GOOGLE_API_KEY` in the `.env` file to access the AI network."
                         st.warning(msg)
